@@ -1,0 +1,10 @@
+#+Title:  Readme py_using
+
+** Related Resources
+There is a /Github Pages page/ for this project at: https://brudgers.github.io/py_using/ which is the /woven/ representation of the project.
+
+** Literate Programming
+This project utilizes Emacs' [[http://orgmode.org/][org-mode]] and in particular the system [[http://orgmode.org/worg/org-contrib/babel/][Babel]] to implement active programming. I think of active programmng as an extension of Donald Knuth's [[http://www.literateprogramming.com/knuthweb.pdf][literate programming]] paradigam. 
+
+The primary source for this project is =using.org=. Other than this =readme.org= and similar administrativia, most other files in this repository are /tangled/ from it.
+
