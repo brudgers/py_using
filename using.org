@@ -1,0 +1,17 @@
+#+TITLE: Using for Python
+#+PROPERTY: header-args  :tangle yes
+#+OPTIONS: num:nil ^:{}
+This module is designed to smooth over the process of breaking up code into multiple modules by populating the global namespace of the current modules with the names of an imported module. It mimics (more or less) Common Lisp's =:use= keyword when declaring a package with =defpackage=.
+
+If file =sprouts.py= imports the module =lupins=, and =lupins= defines functions =spam=, =eggs=, =comfy_pillows=, then =using(lupins)= will add =lupins.spam= to =sprouts= as =spam=, and =lupins.eggs= as =eggs= and =lupins.comfy_pillows= as =comfy_pillows=.
+
+Essentially it abstracts over the normal Pythonic boiler plate that exists to insure that the worst thing in the world - a name collision - won't happen. Which can be really bad in some contexts but not in others and one of those others is programming in the small. 
+* using globals()
+I sort of know I am the right sort of wrong track when 'How do I declare global variables in a function' is officially [[https://stackoverflow.com/questions/13627865/is-it-possible-to-define-global-variables-in-a-function-in-python][not a real question]] among Pythonistas on Stack Overflow. The way to do it is with =globals()=.
+#+BEGIN_EXAMPLE
+globals()['spam'] = lupins.spam
+#+END_EXAMPLE
+* using dir()
+
+
+
