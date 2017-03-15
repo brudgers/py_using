@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2017-03-14 Tue 14:35 -->
+<!-- 2017-03-14 Tue 20:37 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Using for Python</title>
@@ -233,8 +233,9 @@ for the JavaScript code in this tag.
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#orgaa75071">using globals()</a></li>
-<li><a href="#org825a5fe">using dir()</a></li>
+<li><a href="#org16944d9">using globals()</a></li>
+<li><a href="#org59bfc3d">using dir()</a></li>
+<li><a href="#orgc1a814b">using exec()</a></li>
 </ul>
 </div>
 </div>
@@ -247,26 +248,96 @@ If file <code>sprouts.py</code> imports the module <code>lupins</code>, and <cod
 </p>
 
 <p>
-Essentially it abstracts over the normal Pythonic boiler plate that exists to insure that the worst thing in the world - a name collision - won't happen. Which can be really bad in some contexts but not in others and one of those others is programming in the small. 
+Essentially it abstracts over the normal Pythonic boiler plate that exists to insure that the worst thing in the world - a name collision - won't happen. Which can be really bad in some contexts but not in others and one of those others is programming in the small.
 </p>
-<div id="outline-container-orgaa75071" class="outline-2">
-<h2 id="orgaa75071">using globals()</h2>
-<div class="outline-text-2" id="text-orgaa75071">
+<div class="org-src-container">
+<pre class="src src-python">&lt;&lt;using-dir-imports&gt;&gt;
+
+def using(mod):
+    """
+    Imports all public values of module into the global namespace
+    of current module.
+    """
+    # trying to reference a property of a module 
+    # as if it were a lexicically scoped variable 
+    # within a function call seems to cause problems.
+    # so it is precomputed for use witin the closure
+    name = mod.__name__
+
+    &lt;&lt;make-assignment-statement-string&gt;&gt;
+
+    &lt;&lt;using-dir&gt;&gt;
+
+    &lt;&lt;using-exec&gt;&gt;
+</pre>
+</div>
+<div id="outline-container-org16944d9" class="outline-2">
+<h2 id="org16944d9">using globals()</h2>
+<div class="outline-text-2" id="text-org16944d9">
 <p>
 I sort of know I am the right sort of wrong track when 'How do I declare global variables in a function' is officially <a href="https://stackoverflow.com/questions/13627865/is-it-possible-to-define-global-variables-in-a-function-in-python">not a real question</a> among Pythonistas on Stack Overflow. The way to do it is with <code>globals()</code>.
 </p>
 <pre class="example">
 globals()['spam'] = lupins.spam
 </pre>
+<p>
+However, since this is metaprogramming and Python meta-programming is done with strings, we'll have to generate a string that can be executed to create the assignment.
+</p>
+<div class="org-src-container">
+<pre class="src src-python" id="org578134f">def make_assignment_statement_string(val):
+    return "globals()['" + val + "'] = " + name + "." + val
+</pre>
 </div>
 </div>
-<div id="outline-container-org825a5fe" class="outline-2">
-<h2 id="org825a5fe">using dir()</h2>
+</div>
+<div id="outline-container-org59bfc3d" class="outline-2">
+<h2 id="org59bfc3d">using dir()</h2>
+<div class="outline-text-2" id="text-org59bfc3d">
+<p>
+The function <code>dir()</code> takes an object and returns a list of the names (as strings) of all its properties. Generally we won't want any that start with <code>_</code> in the current module&#x2026;there's unpythonic and then there's plain asking for trouble by violating Python's work around for lack of privacy&#x2026;besides, 'private' variables are the sort of thing that will not be missed.
+</p>
+<div class="org-src-container">
+<pre class="src src-python" id="orga430159">pat = re.compile('^_.+')
+all_props = dir(module)
+props = [i for i in all_props if not pat.match(i)]
+</pre>
+</div>
+<p>
+Using regular expressions requires importing the <code>re</code> module from the standard library.
+</p>
+<div class="org-src-container">
+<pre class="src src-python" id="org557b422">import re
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-orgc1a814b" class="outline-2">
+<h2 id="orgc1a814b">using exec()</h2>
+<div class="outline-text-2" id="text-orgc1a814b">
+<p>
+Generally using <code>exec</code> is not considered as evil as using <code>eval</code> but in normal discourse it falls within the "That's not very Pythonic" category at worst and the "Are you really sure you want to do that?" at best. Most of that is because meta-programming is not usually part of normal Python discourse. That's unfortunate.
+</p>
+
+<p>
+The difference between <code>exec</code> and <code>eval</code> is that <code>exec</code> handles statements and <code>eval</code> handles expressions. The reason there are both statements and expressions in Python is because there's only one way of doing things.
+</p>
+
+<p>
+Originally, I tried to use <code>map</code> for both loops. Python 3 does not like <code>map</code> and it returns iterables rather than lists and does not want to work with <code>exec</code>. Hours lost because <code>map</code> is not Pythonic.
+</p>
+<div class="org-src-container">
+<pre class="src src-python" id="orgf3f385e">assignments = [make_assignment_statement_string(i) for i in props]
+
+for assignment in assignments:
+    exec(assignment)
+</pre>
+</div>
+</div>
 </div>
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: benrudgers</p>
-<p class="date">Created: 2017-03-14 Tue 14:35</p>
+<p class="date">Created: 2017-03-14 Tue 20:37</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

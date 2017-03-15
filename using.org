@@ -1,17 +1,68 @@
 #+TITLE: Using for Python
-#+PROPERTY: header-args  :tangle yes
+#+PROPERTY: header-args  :tangle no
 #+OPTIONS: num:nil ^:{}
 This module is designed to smooth over the process of breaking up code into multiple modules by populating the global namespace of the current modules with the names of an imported module. It mimics (more or less) Common Lisp's =:use= keyword when declaring a package with =defpackage=.
 
 If file =sprouts.py= imports the module =lupins=, and =lupins= defines functions =spam=, =eggs=, =comfy_pillows=, then =using(lupins)= will add =lupins.spam= to =sprouts= as =spam=, and =lupins.eggs= as =eggs= and =lupins.comfy_pillows= as =comfy_pillows=.
 
-Essentially it abstracts over the normal Pythonic boiler plate that exists to insure that the worst thing in the world - a name collision - won't happen. Which can be really bad in some contexts but not in others and one of those others is programming in the small. 
+Essentially it abstracts over the normal Pythonic boiler plate that exists to insure that the worst thing in the world - a name collision - won't happen. Which can be really bad in some contexts but not in others and one of those others is programming in the small.
+#+BEGIN_SRC python :noweb tangle :tangle using.py
+  <<using-dir-imports>>
+
+  def using(mod):
+      """
+      Imports all public values of module into the global namespace
+      of current module.
+      """
+      # trying to reference a property of a module 
+      # as if it were a lexicically scoped variable 
+      # within a function call seems to cause problems.
+      # so it is precomputed for use witin the closure
+      name = mod.__name__
+
+      <<make-assignment-statement-string>>
+
+      <<using-dir>>
+
+      <<using-exec>>
+#+END_SRC 
 * using globals()
 I sort of know I am the right sort of wrong track when 'How do I declare global variables in a function' is officially [[https://stackoverflow.com/questions/13627865/is-it-possible-to-define-global-variables-in-a-function-in-python][not a real question]] among Pythonistas on Stack Overflow. The way to do it is with =globals()=.
 #+BEGIN_EXAMPLE
 globals()['spam'] = lupins.spam
 #+END_EXAMPLE
+However, since this is metaprogramming and Python meta-programming is done with strings, we'll have to generate a string that can be executed to create the assignment.
+#+NAME: make-assignment-statement-string
+#+BEGIN_SRC python
+  def make_assignment_statement_string(val):
+      return "globals()['" + val + "'] = " + name + "." + val
+#+END_SRC
 * using dir()
+The function =dir()= takes an object and returns a list of the names (as strings) of all its properties. Generally we won't want any that start with =_= in the current module...there's unpythonic and then there's plain asking for trouble by violating Python's work around for lack of privacy...besides, 'private' variables are the sort of thing that will not be missed.
+#+NAME: using-dir
+#+BEGIN_SRC python
+  pat = re.compile('^_.+')
+  all_props = dir(module)
+  props = [i for i in all_props if not pat.match(i)]
+#+END_SRC
+Using regular expressions requires importing the =re= module from the standard library.
+#+NAME: using-dir-imports
+#+BEGIN_SRC python
+  import re
+#+END_SRC
+* using exec()
+Generally using =exec= is not considered as evil as using =eval= but in normal discourse it falls within the "That's not very Pythonic" category at worst and the "Are you really sure you want to do that?" at best. Most of that is because meta-programming is not usually part of normal Python discourse. That's unfortunate.
 
+The difference between =exec= and =eval= is that =exec= handles statements and =eval= handles expressions. The reason there are both statements and expressions in Python is because there's only one way of doing things.
+
+Originally, I tried to use =map= for both loops. Python 3 does not like =map= and it returns iterables rather than lists and does not want to work with =exec=. Hours lost because =map= is not Pythonic.
+#+NAME: using-exec
+#+BEGIN_SRC python
+
+  assignments = [make_assignment_statement_string(i) for i in props]
+
+  for assignment in assignments:
+      exec(assignment)
+#+END_SRC
 
 
